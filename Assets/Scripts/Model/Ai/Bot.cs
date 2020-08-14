@@ -96,8 +96,10 @@ namespace Model.Ai
 
         #region IExecute
 
-        public void Execute()
+        public override void Execute()
         {
+            base.Execute();
+            
             if (StateBot == StateBot.Died) return;
 
             if (StateBot != StateBot.Detected)

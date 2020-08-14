@@ -3,17 +3,16 @@ using Controller.TimeRemaining;
 using Enums;
 using Helper;
 using Interface;
-using Manager;
 using UnityEngine;
 using UnityEngine.AI;
 
 
 namespace Model
 {
-    public abstract class BaseUnitModel : BaseObjectScene
+    public abstract class BaseUnitModel : BaseObjectScene, IExecute
         ///todo IExecute перенести с потомков сюда, после того как будет сделан  
         /// собственный контроллер передвижения(убрать IMotor и CharacterController)
-        
+
         //todo сделать базовую машину состояний для всех Unit`ов
     {
         #region Fields
@@ -21,7 +20,15 @@ namespace Model
         [SerializeField] protected float _hp = 100;
         private protected StateUnit _state;
 
+        //костыль: нахождение на земле начинаем проверять через пол секунды после получения AddForce
+        private float _timeStunned = 0.5f;
+        private float _distanceCheckGround = 1.05f;
+
         #region flags
+
+        //костыль: нахождение на земле начинаем проверять через пол секунды после получения AddForce
+        private bool _stunned = false;
+        private bool _unstunnedRun = false;
 
         private protected bool IsCharacterController;
         private protected bool IsNavMeshAgent;
@@ -37,6 +44,12 @@ namespace Model
 
 
         #region Properties
+
+        public StateUnit StateUnit
+        {
+            get => _state;
+            set => _state = value;
+        }
 
         public float Hp
         {
@@ -84,6 +97,38 @@ namespace Model
             _state = StateUnit.Fly;
         }
 
+
+        private void UnStunned()
+        {
+            _stunned = true;
+            _unstunnedRun = true;
+            var timeRemainingUnStunned = new TimeRemaining(delegate { _stunned = false; }, _timeStunned);
+            timeRemainingUnStunned.AddTimeRemainingExecute();
+        }
+
+        private void CheckGround()
+        {
+            if (_stunned) return;
+            Debug.DrawRay(Transform.position, Vector3.down, Color.magenta, _distanceCheckGround);
+            if (Physics.Raycast(Transform.position, Vector3.down, _distanceCheckGround))
+            {
+                if (IsCharacterController)
+                    CashCharacterController.enabled = true;
+                if (IsNavMeshAgent)
+                {
+                    CashNavMeshAgent.enabled = true;
+                }
+
+                if (IsKinematicRigidBody)
+                    Rigidbody.isKinematic = CashKinematicRigidBody;
+                StateUnit = StateUnit.Indy;
+
+                Debug.Log($"PlayerModel.CheckGround:TRUE");
+            }
+            else
+                Debug.Log($"PlayerModel.CheckGround:FALSE");
+        }
+
         // private void OnCollisionEnter(Collision other)
         // {
         //     //todo переделать на рейкаст под себя и состояние нахождения на земле
@@ -106,5 +151,93 @@ namespace Model
                 Hp += delta;
             }
         }
+
+        public virtual void Execute()
+        {
+            //todo привязать машину состояний, делать проверку CheckGround только в состояниях Indy,Run,Invisible,Float,Fly
+            switch (StateUnit)
+            {
+                case StateUnit.None:
+                    StateUnitNone();
+                    break;
+                case StateUnit.Indy:
+                    StateUnitIndy();
+                    break;
+                case StateUnit.Run:
+                    StateUnitRun();
+                    break;
+                case StateUnit.Attack:
+                    StateUnitAttack();
+                    break;
+                case StateUnit.Attacked:
+                    StateUnitAttacked();
+                    break;
+                case StateUnit.Invisible:
+                    StateUnitInvisible();
+                    break;
+                case StateUnit.Stunned:
+                    StateUnitStunned();
+                    break;
+                case StateUnit.Float:
+                    StateUnitFloat();
+                    break;
+                case StateUnit.Fly:
+                    StateUnitFly();
+                    break;
+                case StateUnit.Died:
+                    StateUnitDied();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        #region StateUnit
+
+        protected void StateUnitNone()
+        {
+        }
+
+        protected void StateUnitIndy()
+        {
+        }
+
+        protected void StateUnitRun()
+        {
+        }
+
+        protected void StateUnitAttack()
+        {
+        }
+
+        protected void StateUnitAttacked()
+        {
+        }
+
+        protected void StateUnitInvisible()
+        {
+        }
+
+        protected void StateUnitStunned()
+        {
+        }
+
+        protected void StateUnitFloat()
+        {
+        }
+
+        protected void StateUnitFly()
+        {
+            if (!_unstunnedRun)
+                UnStunned();
+            else
+                CheckGround();
+        }
+
+        protected void StateUnitDied()
+        {
+        }
+
+        #endregion
     }
 }
