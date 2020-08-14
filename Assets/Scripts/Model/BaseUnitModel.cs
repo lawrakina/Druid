@@ -1,5 +1,6 @@
 ﻿using System;
 using Controller.TimeRemaining;
+using Enums;
 using Helper;
 using Interface;
 using Manager;
@@ -10,22 +11,27 @@ using UnityEngine.AI;
 namespace Model
 {
     public abstract class BaseUnitModel : BaseObjectScene
+        ///todo IExecute перенести с потомков сюда, после того как будет сделан  
+        /// собственный контроллер передвижения(убрать IMotor и CharacterController)
+        
+        //todo сделать базовую машину состояний для всех Unit`ов
     {
         #region Fields
 
         [SerializeField] protected float _hp = 100;
+        private protected StateUnit _state;
 
         #region flags
 
-        private bool _isCharacterController;
-        private bool _isNavMeshAgent;
-        private bool _isKinematicRigidBody;
+        private protected bool IsCharacterController;
+        private protected bool IsNavMeshAgent;
+        private protected bool IsKinematicRigidBody;
 
         #endregion
 
-        private CharacterController _cashCharacterController;
-        private NavMeshAgent _cashNavMeshAgent;
-        private bool _cashKinematicRigidBody;
+        private protected CharacterController CashCharacterController;
+        private protected NavMeshAgent CashNavMeshAgent;
+        private protected bool CashKinematicRigidBody;
 
         #endregion
 
@@ -47,14 +53,14 @@ namespace Model
 
         private void Start()
         {
-            _cashCharacterController = GetComponent<CharacterController>();
-            _isCharacterController = _cashCharacterController != null;
+            CashCharacterController = GetComponent<CharacterController>();
+            IsCharacterController = CashCharacterController != null;
 
-            _cashNavMeshAgent = GetComponent<NavMeshAgent>();
-            _isNavMeshAgent = _cashNavMeshAgent != null;
+            CashNavMeshAgent = GetComponent<NavMeshAgent>();
+            IsNavMeshAgent = CashNavMeshAgent != null;
 
-            _cashKinematicRigidBody = Rigidbody.isKinematic;
-            _isKinematicRigidBody = true;
+            CashKinematicRigidBody = Rigidbody.isKinematic;
+            IsKinematicRigidBody = true;
         }
 
         #endregion
@@ -62,34 +68,36 @@ namespace Model
 
         public void Bang(InfoCollision collision)
         {
-            if (_isCharacterController)
-                _cashCharacterController.enabled = false;
-            if (_isNavMeshAgent)
-                _cashNavMeshAgent.enabled = false;
-            if (_isKinematicRigidBody)
-                Rigidbody.isKinematic = !_cashKinematicRigidBody;
+            if (IsCharacterController)
+                CashCharacterController.enabled = false;
+            if (IsNavMeshAgent)
+                CashNavMeshAgent.enabled = false;
+            if (IsKinematicRigidBody)
+                Rigidbody.isKinematic = !CashKinematicRigidBody;
 
             Rigidbody.AddForce(collision.Direction, ForceMode.Impulse);
 
             var tempObj = GetComponent<ICollision>();
             if (tempObj != null)
                 tempObj.OnCollision(collision);
+
+            _state = StateUnit.Fly;
         }
 
-        private void OnCollisionEnter(Collision other)
-        {
-            //todo переделать на рейкаст под себя и состояние нахождения на земле
-            //проверка на принадлежность касаемого объекта к окружению
-            if ((LayerMask.NameToLayer(TagManager.LAYER_MASK_ENVIRONMENT) & (1 << other.gameObject.layer)) == 0)
-            {
-                if (_isCharacterController)
-                    _cashCharacterController.enabled = true;
-                if (_isNavMeshAgent)
-                    _cashNavMeshAgent.enabled = true;
-                if (_isKinematicRigidBody)
-                    Rigidbody.isKinematic = _cashKinematicRigidBody;
-            }
-        }
+        // private void OnCollisionEnter(Collision other)
+        // {
+        //     //todo переделать на рейкаст под себя и состояние нахождения на земле
+        //     //проверка на принадлежность касаемого объекта к окружению
+        //     if ((LayerMask.NameToLayer(TagManager.LAYER_MASK_ENVIRONMENT) & (1 << other.gameObject.layer)) == 0)
+        //     {
+        //         if (IsCharacterController)
+        //             CashCharacterController.enabled = true;
+        //         if (IsNavMeshAgent)
+        //             CashNavMeshAgent.enabled = true;
+        //         if (IsKinematicRigidBody)
+        //             Rigidbody.isKinematic = CashKinematicRigidBody;
+        //     }
+        // }
 
         public void OnHealing(float delta)
         {

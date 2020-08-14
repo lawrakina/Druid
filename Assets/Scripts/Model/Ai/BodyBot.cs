@@ -19,7 +19,7 @@ namespace Model.Ai
 
         public void OnCollision(InfoCollision info)
         {
-            Debug.Log($"BodyBot.OnCollision.Info:{info.Damage}");
+            // Debug.Log($"BodyBot.OnCollision.Info:{info.Damage}");
             OnApplyDamageChange?.Invoke(info);
         }
 

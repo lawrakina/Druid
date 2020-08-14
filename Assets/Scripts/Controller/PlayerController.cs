@@ -1,10 +1,6 @@
-﻿
-
-using Helper;
-using Interface;
+﻿using Interface;
 using Model;
 using UnityEngine;
-using View;
 
 namespace Controller
 {
@@ -45,6 +41,7 @@ namespace Controller
             }
 
             _motor.Move();
+            _playerModel.Execute();
 
             UiInterface.PlayerXpUiText.Text = _playerModel.Hp;
             UiInterface.PlayerXpUiBar.Fill = _playerModel.PercentXp;
